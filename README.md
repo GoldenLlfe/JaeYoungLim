@@ -6,6 +6,8 @@ made at github
 
 ###trying to create conflict
 
-##copied README file from local file -this is the conflict
 
-##edited at github-branch
+##edited at github
+
+
+###final edition at github
