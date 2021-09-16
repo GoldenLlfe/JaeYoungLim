@@ -1,3 +1,3 @@
-# JaeYoungLim
+### JaeYoungLim
 
-This resipotory is for YGL K-digital traing daily report
+##This repository is for YGL K-digital traing daily report
