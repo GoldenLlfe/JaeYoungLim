@@ -1,3 +1,3 @@
 # JaeYoungLim
 
-This is for YGL manager to confirm my daily report
+This resipotory is for YGL K-digital traing daily report
