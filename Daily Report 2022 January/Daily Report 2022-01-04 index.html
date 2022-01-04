@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>스쿼트 트레이너</title>
+		<style>
+		 body {
+
+		 margin: 0px;
+
+         background-image: url("background.jpg");
+         background-repeat:no-repeat;
+         background-size: cover;
+
+		 }
+	</style>
+        <!-- Favicon-->
+        <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+        <!-- Core theme CSS (includes Bootstrap)-->
+        <link href="css/styles.css" rel="stylesheet" />
+    </head>
+    <body>
+        <!-- Responsive navbar-->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container px-5">
+                <a class="navbar-brand" href="#!">스쿼트 트레이너</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        <li class="nav-item"><a class="nav-link active" aria-current="page" href="#!">Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#!">About</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#!">Contact</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#!">Services</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- Page Content-->
+        <div class="container px-4 px-lg-5">
+            <!-- Heading Row-->
+            <div class="row gx-4 gx-lg-5 align-items-center my-5">
+                <div class="embed-responsive embed-responsive-16by9"><iframe class="embed-responsive-item" id="ytplayer" type="text/html" width="600" height="337.5"
+  src="https://www.youtube.com/embed/Fk9j6pQ6ej8?autoplay=1&origin=http://example.com"
+  frameborder="0"></iframe></div>
+                <div class="col-lg-5">
+                    <h1 class="text-white fs-3 fw-bolder">동영상을 따라해 보세요</h1>
+                    <p class="text-white fw-bolder"> 주의 사항!</p>
+					<li class="text-white fw-bolder"> 옆 모습이 화면에 나오도록 적당히 떨어져서 스쿼트를 하세요.</li>
+					<li class="text-white fw-bolder"> 제대로 스쿼트를 해야지만 카운트가 올라갑니다. </li>
+                    <button type="button" onclick="init()">START!</button>
+                </div>
+            </div>
+			<div><canvas id="canvas"></canvas></div>
+
+<div id="label-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
+<script type="text/javascript">
+    // More API functions here:
+    // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/pose
+
+    // the link to your model provided by Teachable Machine export panel
+    const URL = "./my_model/";
+    let model, webcam, ctx, labelContainer, maxPredictions;
+
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+        // load the model and metadata
+        // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
+        // Note: the pose library adds a tmPose object to your window (window.tmPose)
+        model = await tmPose.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        // Convenience function to setup a webcam
+        size = 600;
+		height = 337.5;
+        const flip = true; // whether to flip the webcam
+        webcam = new tmPose.Webcam(size, height, flip); // width, height, flip
+        await webcam.setup(); // request access to the webcam
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        // append/get elements to the DOM
+        const canvas = document.getElementById("canvas");
+        canvas.width = size; canvas.height = height;
+        ctx = canvas.getContext("2d");
+        labelContainer = document.getElementById("label-container");
+        for (let i = 0; i < maxPredictions; i++) { // and class labels
+            labelContainer.appendChild(document.createElement("div"));
+        }
+    }
+
+    async function loop(timestamp) {
+        webcam.update(); // update the webcam frame
+        await predict();
+        window.requestAnimationFrame(loop);
+    }
+
+		var status = "std"
+		var count = 0
+
+    async function predict() {
+        // Prediction #1: run input through posenet
+        // estimatePose can take in an image, video or canvas html element
+        const { pose, posenetOutput } = await model.estimatePose(webcam.canvas);
+        // Prediction 2: run input through teachable machine classification model
+        const prediction = await model.predict(posenetOutput);
+
+				if(prediction[0].probability.toFixed(2) > 0.97) {
+					if(status == "sqd") {
+						count++
+						var audio = new Audio( count%10 + '.m4a');
+						audio.play();
+					}
+					status = "std"
+				} else if(prediction[1].probability.toFixed(2) >0.99) {
+					status = "sqd"
+				} else if(prediction[2].probability.toFixed(2) > 0.95) {
+					if(status =="std") {
+						var audio = new Audio( 111 + '.m4a');
+						audio.play();
+					}
+					status = "err1"
+				} else if(prediction[3].probability.toFixed(2) == 1.00) {
+					if(status =="std") {
+						var audio = new Audio( 222 + '.m4a');
+						audio.play();
+					}
+					status = "err2"
+
+				}
+
+        for (let i = 0; i < maxPredictions; i++) {
+            const classPrediction =
+                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+            labelContainer.childNodes[i].innerHTML = classPrediction;
+        }
+
+        // finally draw the poses
+        drawPose(pose);
+    }
+
+    function drawPose(pose) {
+        if (webcam.canvas) {
+            ctx.drawImage(webcam.canvas, 0, 0);
+            // draw the keypoints and skeleton
+            if (pose) {
+                const minPartConfidence = 0.5;
+                tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx);
+                tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx);
+            }
+        }
+    }
+</script>
+            <!-- Call to Action-->
+            <div class="card text-white bg-secondary my-5 py-4 text-center">
+                <div class="card-body"><h1 class="text-white m-0">왜 스쿼트 인가?</h1></div>
+            </div>
+            <!-- Content Row-->
+            <div class="row gx-4 gx-lg-5">
+                <div class="col-md-4 mb-5">
+                    <div class="card text-white bg-secondary mb-3">
+                        <div class="card-body">
+                            <h2 class="card-title">3대 중량 운동 중 하나</h2>
+                            <p class="card-text">스쿼트는 벤치 프레스, 데드 리프트와 더불어 3대 웨이트 트레이닝 - 중량 운동중 하나이다. </p>
+                        </div>
+                      <div class="card-footer"><a class="btn btn-primary btn-sm" href="#!">More Info</a></div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-5">
+                    <div class="card text-white bg-dark mb-3">
+                        <div class="card-body">
+                            <h2 class="card-title">하체 운동의 핵심</h2>
+                            <p class="card-text">허벅지는 몸의 근욱 중 등을 제외하면 가장 크고 많은 근육을 가지고 있는 부위이고 스쿼트는 그 허벅지를 단련하는 운동이다.</p>
+                        </div>
+                       <div class="card-footer"><a class="btn btn-primary btn-sm" href="#!">More Info</a></div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-5">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h2 class="card-title">가성비 좋은 맨몸 운동</h2>
+                            <p class="card-text">아무 것도 없이 웅크려 앉을 공간만 있다면 별다른 비용없이 할 수 있는 운동이다..</p>
+                        </div>
+                        <div class="card-footer"><a class="btn btn-primary btn-sm" href="#!">More Info</a></div> 
+                    </div>
+                </div>
+            </div>
+			<div id="disqus_thread"></div>
+<script>
+	/**
+	*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+	*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables    */
+	/*
+	var disqus_config = function () {
+	this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+	this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+	};
+	*/
+	(function() { // DON'T EDIT BELOW THIS LINE
+	var d = document, s = d.createElement('script');
+	s.src = 'https://signlanguagegarden.disqus.com/embed.js';
+	s.setAttribute('data-timestamp', +new Date());
+	(d.head || d.body).appendChild(s);
+	})();
+</script>
+        </div>
+        <!-- Footer-->
+        <footer class="py-5 bg-dark">
+            <div class="container px-4 px-lg-5"><p class="m-0 text-center text-white">Copyright &copy; 정원임It's garden - 스쿼트 트레이너 2021</p></div>
+        </footer>
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Core theme JS-->
+        <script src="js/scripts.js"></script>
+    </body>
+</html>
